@@ -4,19 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	"io"
 	"log"
 	"net/http"
 	"sync"
 	"time"
 )
+
 type Message struct {
 	// Capital always
 	Record string
 }
+
 var mutex = &sync.Mutex{}
 var blockHandler = NewBlockchain()
-
 
 // web server run
 func run() error {
@@ -38,7 +38,6 @@ func run() error {
 	return nil
 }
 
-
 func makeMuxRouter() http.Handler {
 	muxRouter := mux.NewRouter()
 	muxRouter.HandleFunc("/", handleGetBlockchain).Methods("GET")
@@ -48,7 +47,7 @@ func makeMuxRouter() http.Handler {
 
 func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var m Message
+	var m map[string]interface{}
 
 	decoder := json.NewDecoder(r.Body)
 
@@ -62,20 +61,21 @@ func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
 	mutex.Lock()
 	//fmt.Println(m)
 	//fmt.Println(m.Record)
-	blockHandler.AddBlock(m.Record)
+	postTx(m)
+	//blockHandler.AddBlock(m.Record)
 	mutex.Unlock()
-	newBlock := blockHandler.blocks[len(blockHandler.blocks)-1]
-	respondWithJSON(w, r, http.StatusCreated, newBlock)
+	//newBlock := blockHandler.blocks[len(blockHandler.blocks)-1]
+	respondWithJSON(w, r, http.StatusCreated, "asa")
 }
 
-
 func handleGetBlockchain(w http.ResponseWriter, r *http.Request) {
-	bytes, err := json.MarshalIndent(blockHandler.blocks, "", "  ")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	io.WriteString(w, string(bytes))
+	respondWithJSON(w, r, 200, getTx())
+	//bytes, err := json.MarshalIndent(blockHandler.blocks, "", "  ")
+	//if err != nil {
+	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//	return
+	//}
+	//io.WriteString(w, string(bytes))
 }
 
 func respondWithJSON(w http.ResponseWriter, r *http.Request, code int, payload interface{}) {

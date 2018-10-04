@@ -13,6 +13,7 @@ const publicKey = "D1ACjwzXEyP8s5Yjs6xDhfhd3yM7d92jxnAznysDFC3D"
 
 // postData from argv[2]
 const postData = process.argv[2]
+postData = Object.assign(postData, {timestamp: new Date()})
 
 // Construct a transaction payload
 const tx = driver.Transaction.makeCreateTransaction(

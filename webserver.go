@@ -41,6 +41,8 @@ func run() error {
 func makeMuxRouter() http.Handler {
 	muxRouter := mux.NewRouter()
 	muxRouter.HandleFunc("/", handleGetBlockchain).Methods("GET")
+	muxRouter.HandleFunc("/outputs", handleGetBlockchain).Methods("GET")
+	muxRouter.HandleFunc("/transactions", handleGetBlockchain).Methods("GET")
 	muxRouter.HandleFunc("/", handleWriteBlock).Methods("POST")
 	return muxRouter
 }
@@ -69,13 +71,14 @@ func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleGetBlockchain(w http.ResponseWriter, r *http.Request) {
-	respondWithJSON(w, r, 200, getTx())
-	//bytes, err := json.MarshalIndent(blockHandler.blocks, "", "  ")
-	//if err != nil {
-	//	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//	return
-	//}
-	//io.WriteString(w, string(bytes))
+	assetId := r.URL.Query().Get("asset_id")
+	publicKey := r.URL.Query().Get("public_key")
+	path := r.URL.Path
+	fmt.Printf("assetId is %s, publickey is %s \n\n", assetId, publicKey)
+	if(assetId =="" && publicKey == "" && path == ""){
+		respondWithJSON(w, r, 400, errorHandler(http.StatusBadRequest))
+	}
+	respondWithJSON(w, r, 200, getTx(path, assetId, publicKey))
 }
 
 func respondWithJSON(w http.ResponseWriter, r *http.Request, code int, payload interface{}) {
@@ -87,4 +90,15 @@ func respondWithJSON(w http.ResponseWriter, r *http.Request, code int, payload i
 	}
 	w.WriteHeader(code)
 	w.Write(response)
+}
+func errorHandler(status int) interface{}{
+	type httpError struct {
+		error string
+	}
+	if status == http.StatusBadRequest {
+		resp, err := json.Marshal(httpError{error: "Not enough params"})
+		fmt.Println(err)
+		return resp
+	}
+	return httpError{error: "Not Found"}
 }
